@@ -1,0 +1,10 @@
+.clasp.json
+node_modules/
+local/
+
+# Nunca versionar datos personales ni planillas
+*.xlsx
+*.xls
+*.csv
+*.pdf
+_preview.html

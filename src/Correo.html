@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #202124; margin: 0; }
+  .codigo { display: flex; align-items: center; gap: 10px; background: #dce6f1; border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
+  .codigo span { font-size: 11px; color: #1f4e78; }
+  .codigo b { font-size: 16px; color: #1f4e78; letter-spacing: .5px; flex: 1; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  label { display: block; font-size: 11px; color: #5f6368; margin-bottom: 3px; }
+  input, select, textarea { width: 100%; box-sizing: border-box; padding: 7px 8px; border: 1px solid #dadce0;
+    border-radius: 6px; font: inherit; background: #fff; }
+  input[readonly], textarea[readonly] { background: #f6f8fb; }
+  textarea { resize: vertical; line-height: 1.45; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; }
+  .row b { flex: 1; color: #1f4e78; }
+  button { background: #1f4e78; color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; cursor: pointer; font: inherit; }
+  button.sec { background: #e8eef6; color: #1f4e78; }
+  button:disabled { opacity: .5; cursor: default; }
+  .pdfs { font-family: Consolas, monospace; font-size: 12px; background: #f6f8fb; border: 1px solid #e3e7ed;
+    border-radius: 6px; padding: 6px 8px; max-height: 70px; overflow: auto; }
+  .pie { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+  #msg { flex: 1; font-size: 12px; color: #5f6368; }
+  #msg.ok { color: #188038; } #msg.err { color: #c5221f; }
+</style>
+</head>
+<body>
+<div class="codigo"><span>Código de envío</span><b id="cod"></b><button class="sec" onclick="copiarTexto(D.codigo, this)">Copiar código</button></div>
+
+<div class="grid">
+  <div><label>Solicitante (elija de la lista o escriba uno nuevo)</label><input id="sol" list="sols" autocomplete="off"><datalist id="sols"></datalist></div>
+  <div><label>Área / Servicio</label><input id="area"></div>
+  <div><label>Medio del pedido</label><select id="medio"></select></div>
+  <div><label>Fecha del pedido</label><input id="fecha" type="date"></div>
+  <div><label>Correo de destino (Para)</label><input id="para" type="email" placeholder="nombre@institucion.gob.pe"></div>
+  <div><label>Enviado por</label><select id="por"></select></div>
+</div>
+
+<div class="row"><b>CC</b><button class="sec" onclick="copiar('cc', this)">Copiar CC</button></div>
+<input id="cc" readonly>
+
+<div class="row"><b>Asunto</b><button onclick="copiar('asunto', this)">Copiar asunto</button></div>
+<input id="asunto" readonly>
+
+<div class="row"><b>Cuerpo</b><button onclick="copiar('cuerpo', this)">Copiar cuerpo</button></div>
+<textarea id="cuerpo" rows="12" readonly></textarea>
+
+<div class="row"><b>Archivos PDF a adjuntar</b></div>
+<div id="pdfs" class="pdfs"></div>
+
+<div class="pie">
+  <span id="msg"></span>
+  <button class="sec" onclick="google.script.host.close()">Cerrar</button>
+  <button id="bor" class="sec" onclick="borrador()">Crear borrador en Gmail</button>
+  <button id="reg" onclick="registrar()">Registrar en Envíos y cerrar</button>
+</div>
+
+<script>
+  var D = <?!= datos ?>;
+  var NL = String.fromCharCode(10);
+  var FRASE = { 'WhatsApp': 'por WhatsApp', 'Correo institucional': 'por correo institucional',
+    'Presencial': 'de forma presencial', 'Documento / Memorando': 'mediante documento', 'Teléfono': 'por teléfono' };
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function opciones(sel, lista) {
+    el(sel).innerHTML = '<option value=""></option>' + lista.map(function (x) {
+      return '<option>' + esc(x) + '</option>'; }).join('');
+  }
+  function dmy(iso) { if (!iso) return 'DD/MM/AAAA'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+  function elegirSolicitante() {
+    var nombre = el('sol').value.trim().toLowerCase();
+    var s = D.solicitantes.filter(function (x) { return x.nombre.toLowerCase() === nombre; })[0];
+    if (s) { el('area').value = s.area; el('para').value = s.correo; }
+    armar();
+  }
+
+  function armar() {
+    var n = D.filas.length, medio = el('medio').value;
+    var frase = FRASE[medio] || (medio ? 'por ' + medio.toLowerCase() : 'por [medio]');
+    var lista = D.filas.map(function (r, i) {
+      return (i + 1) + '. ' + r.nombre + ' – DNI ' + r.dni + (r.tipo === 'Informe de Defunción' ? ' (Informe de Defunción)' : '');
+    }).join(NL);
+    el('asunto').value = 'Envío de ' + (n === 1 ? 'copia de certificado' : 'copias de certificados') +
+      ' de defunción [' + D.codigo + ']';
+    el('cuerpo').value = (el('sol').value || 'Dr(a). [Apellido]') + ':' + NL + NL +
+      'Buen día. Atendiendo a su solicitud realizada ' + frase + ' el ' + dmy(el('fecha').value) +
+      ', adjunto copia escaneada ' + (n === 1 ? 'del siguiente certificado' : 'de los siguientes certificados') +
+      ' de defunción:' + NL + NL + lista + NL + NL +
+      'Código de envío: ' + D.codigo + NL + NL + 'Atentamente,';
+  }
+
+  function avisoCopiado(boton) {
+    var t = boton.textContent; boton.textContent = 'Copiado ✓';
+    setTimeout(function () { boton.textContent = t; }, 1500);
+  }
+  function copiarTexto(texto, boton) {
+    var t = document.createElement('textarea'); t.value = texto; document.body.appendChild(t); t.select();
+    var fallback = function () { document.execCommand('copy'); document.body.removeChild(t); avisoCopiado(boton); };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(function () { document.body.removeChild(t); avisoCopiado(boton); }, fallback);
+    else fallback();
+  }
+  function copiar(id, boton) { el(id).select(); copiarTexto(el(id).value, boton); }
+
+  function borrador() {
+    if (!el('para').value) { el('msg').className = 'err'; el('msg').textContent = 'Falta el correo de destino (Para).'; return; }
+    el('bor').disabled = true;
+    el('msg').className = ''; el('msg').textContent = 'Creando borrador…';
+    google.script.run
+      .withSuccessHandler(function () { el('bor').disabled = false; el('msg').className = 'ok';
+        el('msg').textContent = 'Borrador creado en Gmail. Adjunte los PDF, envíelo y luego registre.'; })
+      .withFailureHandler(function (e) { el('bor').disabled = false; el('msg').className = 'err'; el('msg').textContent = e.message; })
+      .crearBorrador({ para: el('para').value, cc: D.cc || '', asunto: el('asunto').value, cuerpo: el('cuerpo').value });
+  }
+
+  function registrar() {
+    var falta = [['sol', 'solicitante'], ['medio', 'medio del pedido'], ['para', 'correo de destino'], ['por', 'enviado por']]
+      .filter(function (f) { return !el(f[0]).value; }).map(function (f) { return f[1]; });
+    if (falta.length) { el('msg').className = 'err'; el('msg').textContent = 'Falta completar: ' + falta.join(', ') + '.'; return; }
+    el('reg').disabled = true;
+    el('msg').className = ''; el('msg').textContent = 'Registrando…';
+    google.script.run
+      .withSuccessHandler(function (n) { el('msg').className = 'ok';
+        el('msg').textContent = 'Envío ' + D.codigo + ' registrado (' + n + ' certificado(s)).';
+        setTimeout(function () { google.script.host.close(); }, 1500); })
+      .withFailureHandler(function (e) { el('reg').disabled = false; el('msg').className = 'err'; el('msg').textContent = e.message; })
+      .registrarEnvio({ codigo: D.codigo, sol: el('sol').value.trim(), area: el('area').value, medio: el('medio').value,
+        fecha: el('fecha').value, para: el('para').value, por: el('por').value,
+        dnis: D.filas.map(function (r) { return r.dni; }) });
+  }
+
+  el('cod').textContent = D.codigo;
+  el('sols').innerHTML = D.solicitantes.map(function (s) { return '<option value="' + esc(s.nombre) + '">'; }).join('');
+  opciones('medio', D.medios);
+  opciones('por', D.personal);
+  el('fecha').value = D.hoy;
+  el('cc').value = D.cc || '(Configure los correos de CC en la hoja Listas, columna H)';
+  el('pdfs').innerHTML = D.filas.map(function (r) { return esc(r.pdf || '(sin nombre de PDF: falta fecha de fallecimiento)'); }).join('<br>');
+  el('sol').addEventListener('change', elegirSolicitante);
+  el('sol').addEventListener('input', elegirSolicitante);
+  ['medio', 'fecha', 'por'].forEach(function (id) { el(id).addEventListener('input', armar); el(id).addEventListener('change', armar); });
+  armar();
+</script>
+</body>
+</html>
