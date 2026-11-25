@@ -104,7 +104,7 @@ function prepararCorreo() {
     cc: [lis.getRange('H2').getValue(), lis.getRange('H3').getValue()].filter(String).join('; '),
     hoy: Utilities.formatDate(new Date(), ZONA, 'yyyy-MM-dd'),
   }).replace(/</g, '\\x3c');
-  ui.showModalDialog(t.evaluate().setWidth(760).setHeight(700), 'Preparar correo de envío');
+  ui.showModalDialog(t.evaluate().setWidth(760).setHeight(560), 'Preparar correo de envío');
 }
 
 /** Llamado desde el diálogo: anota en Envíos una fila por certificado y guarda al solicitante si es nuevo. */
@@ -347,8 +347,8 @@ function armarInstrucciones_(ins) {
     ['1. En Certificados, seleccione las filas a enviar (Ctrl + clic para elegir varias).', ''],
     ['2. Menú Registro > Preparar correo de envío. Se asigna un código único (ej.: ENV-2026-0001).', ''],
     ['3. Elija o escriba el solicitante: si ya está en la hoja Solicitantes, el área y el correo se completan solos.', ''],
-    ['4. Copie CC, Asunto y Cuerpo en el correo institucional y adjunte los PDF de la lista.', ''],
-    ['5. Al enviar el correo, pulse "Registrar en Envíos": se anota solo, y si el solicitante es nuevo se guarda en Solicitantes.', ''],
+    ['4. Pulse "1. Crear borrador en Gmail": el correo queda en Borradores con Para, CC, asunto y cuerpo.', ''],
+    ['5. En Gmail, adjunte los PDF de la lista y envíelo. Luego pulse "2. Registrar envío": se anota solo, y si el solicitante es nuevo se guarda en Solicitantes.', ''],
     ['6. Para ubicar un envío, busque su código en la hoja Envíos o en el correo (Ctrl + F).', ''],
     ['', ''],
     ['Colores', 's'],

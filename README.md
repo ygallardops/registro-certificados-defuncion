@@ -103,11 +103,13 @@ Todo se hace desde el menú <kbd>Registro</kbd> de la hoja:
 | Preparar correo de envío | Abre el diálogo con los certificados seleccionados |
 | Ver envíos | Lleva a la primera fila libre de Envíos |
 
-En el diálogo, completar el solicitante, el medio y la fecha del pedido, el correo de destino y quién envía. Luego:
+En el diálogo, completar el solicitante, el medio y la fecha del pedido, el correo de destino y quién envía. El botón principal avanza en dos pasos:
 
-1. <kbd>Crear borrador en Gmail</kbd>, o copiar CC, asunto y cuerpo con sus botones.
+1. <kbd>1. Crear borrador en Gmail</kbd>: deja el correo en Borradores y bloquea los datos del pedido.
 2. Adjuntar en Gmail los PDF que lista el diálogo y enviar.
-3. <kbd>Registrar en Envíos y cerrar</kbd>.
+3. <kbd>2. Registrar envío</kbd>: anota el envío y cierra el diálogo.
+
+La vista previa del correo está plegada; ahí se puede copiar cada parte si Gmail falla.
 
 > [!TIP]
 > Para ubicar un envío, busque su código en la hoja Envíos o en el correo enviado.
