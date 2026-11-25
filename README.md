@@ -91,6 +91,8 @@ La primera vez, Google pide a cada persona autorizar el script. Los necesita par
 - crear el borrador del correo en el Gmail de quien envía;
 - leer la firma de Gmail de quien envía.
 
+En la pantalla de permisos hay que marcar **Seleccionar todo** y pulsar **Continuar**; sin los permisos de Gmail no se puede crear el borrador.
+
 </details>
 
 ## Uso
@@ -111,6 +113,10 @@ En el diálogo, completar el solicitante, el medio y la fecha del pedido, el cor
 
 La vista previa del correo está plegada; ahí se puede copiar cada parte si Gmail falla.
 
+<img src="docs/dialogo-paso1.png" alt="Diálogo para preparar el correo de envío, paso 1 de 2" width="620">
+
+Las capturas usan datos ficticios. Se regeneran con `python docs/capturas/generar.py`, que carga el diálogo real de `src/Correo.html`.
+
 > [!TIP]
 > Para ubicar un envío, busque su código en la hoja Envíos o en el correo enviado.
 
@@ -118,10 +124,12 @@ La vista previa del correo está plegada; ahí se puede copiar cada parte si Gma
 
 ```text
 .
-└── src
-    ├── Codigo.gs          Menú, registro de envíos, borrador en Gmail y configuración inicial
-    ├── Correo.html        Diálogo para preparar el correo de envío
-    └── appsscript.json    Manifiesto de Apps Script (zona horaria, entorno y servicio de Gmail)
+├── src
+│   ├── Codigo.gs          Menú, registro de envíos, borrador en Gmail y configuración inicial
+│   ├── Correo.html        Diálogo para preparar el correo de envío
+│   └── appsscript.json    Manifiesto de Apps Script (zona horaria, entorno y servicio de Gmail)
+└── docs                   Capturas del diálogo y de la autorización (datos ficticios)
+    └── capturas           Script que genera las capturas del diálogo
 ```
 
 ## Versiones
