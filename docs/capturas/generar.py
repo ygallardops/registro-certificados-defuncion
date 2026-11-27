@@ -43,10 +43,33 @@ ESTADOS = {
 html = (RAIZ / 'src' / 'Correo.html').read_text(encoding='utf-8')
 html = html.replace('<?!= datos ?>', json.dumps(DATOS, ensure_ascii=False)).replace('<script>', STUB + '<script>', 1)
 html = html.replace('<body>', '<body style="padding:12px 16px 14px;box-sizing:border-box">')
-for nombre, js in ESTADOS.items():
+def capturar(nombre, contenido, ancho, alto):
     pagina = SALIDA / 'capturas' / ('_' + nombre.replace('.png', '.html'))
-    pagina.write_text(html.replace('</body>', '<script>' + js + '</script></body>'), encoding='utf-8')
+    pagina.write_text(contenido, encoding='utf-8')
     subprocess.run([NAVEGADOR, '--headless=new', '--hide-scrollbars', '--force-device-scale-factor=2',
-                    '--window-size=744,521', '--screenshot=' + str(SALIDA / nombre), pagina.as_uri()], check=True)
+                    '--window-size=%d,%d' % (ancho, alto), '--screenshot=' + str(SALIDA / nombre), pagina.as_uri()],
+                   check=True)
     pagina.unlink()
     print('generada', nombre)
+
+
+for nombre, js in ESTADOS.items():
+    capturar(nombre, html.replace('</body>', '<script>' + js + '</script></body>'), 744, 521)
+
+# Diálogo "Copiar nombre del PDF": lo arma copiarNombrePdf() de Codigo.gs; se ejecuta con Node y datos ficticios.
+NODE = """
+const vm = require('vm'), fs = require('fs');
+let html = '', alto = 0;
+const salida = { setWidth() { return salida; }, setHeight(h) { alto = h; return salida; } };
+const ctx = { SpreadsheetApp: { getUi: () => ({ showModalDialog() {} }) },
+              HtmlService: { createHtmlOutput: h => { html = h; return salida; } } };
+vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(process.argv[1], 'utf8'), ctx);
+ctx.filas = JSON.parse(process.argv[2]);
+vm.runInContext('filasSeleccionadas_ = () => filas; copiarNombrePdf();', ctx);
+console.log(JSON.stringify({ html, alto }));
+"""
+r = json.loads(subprocess.run(['node', '-e', NODE, str(RAIZ / 'src' / 'Codigo.gs'), json.dumps(DATOS['filas'])],
+                              capture_output=True, text=True, encoding='utf-8', check=True).stdout)
+capturar('copiar-nombre-pdf.png',
+         '<body style="margin:0;padding:12px 16px;box-sizing:border-box">' + r['html'] + '</body>', 600, r['alto'])

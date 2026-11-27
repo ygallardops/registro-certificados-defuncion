@@ -11,6 +11,7 @@ const DNI_CERT = 4, DNI_ENV = 8; // columna del DNI en cada hoja
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Registro')
     .addItem('Nuevo certificado', 'irACertificados')
+    .addItem('Copiar nombre del PDF', 'copiarNombrePdf')
     .addItem('Preparar correo de envío', 'prepararCorreo')
     .addItem('Ver envíos', 'irAEnvios')
     .addToUi();
@@ -73,11 +74,12 @@ function siguienteCodigo_() {
   return pref + String(max + 1).padStart(4, '0');
 }
 
-function prepararCorreo() {
-  const ss = SpreadsheetApp.getActive(), ui = SpreadsheetApp.getUi(), hoja = ss.getActiveSheet();
+/** Certificados seleccionados en la hoja Certificados (sin repetir DNI), o null si no hay ninguno. */
+function filasSeleccionadas_() {
+  const ui = SpreadsheetApp.getUi(), hoja = SpreadsheetApp.getActive().getActiveSheet();
   if (hoja.getName() !== H.cert) {
-    ui.alert('En la hoja Certificados, seleccione las filas a enviar (Ctrl + clic para varias) y vuelva a elegir esta opción.');
-    return;
+    ui.alert('En la hoja Certificados, seleccione las filas (Ctrl + clic para varias) y vuelva a elegir esta opción.');
+    return null;
   }
   const filas = [], vistos = {};
   hoja.getActiveRangeList().getRanges().forEach(r => {
@@ -88,9 +90,40 @@ function prepararCorreo() {
     });
   });
   if (!filas.length) {
-    ui.alert('Las filas seleccionadas no tienen DNI. Seleccione los certificados a enviar.');
-    return;
+    ui.alert('Las filas seleccionadas no tienen DNI. Seleccione los certificados.');
+    return null;
   }
+  return filas;
+}
+
+/**
+ * Muestra el nombre del PDF de las filas seleccionadas con un botón para copiarlo.
+ * Sirve aunque el archivo no permita copiar a los editores: el diálogo es del script, no de la cuadrícula.
+ */
+function copiarNombrePdf() {
+  const filas = filasSeleccionadas_();
+  if (!filas) return;
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const items = filas.map(f => f.pdf
+    ? '<div class="f"><input readonly value="' + esc(f.pdf) + '"><button onclick="copiar(this)">Copiar</button></div>'
+    : '<div class="f vacio">' + esc(f.nombre) + ': falta la fecha de fallecimiento</div>').join('');
+  const html = '<style>body{font-family:Arial,sans-serif;font-size:13px;margin:0}' +
+    '.f{display:flex;gap:8px;margin-bottom:8px}.vacio{color:#c5221f}' +
+    'input{flex:1;font-family:Consolas,monospace;font-size:12px;padding:7px 8px;border:1px solid #dadce0;border-radius:6px;background:#f6f8fb}' +
+    'button{background:#1f4e78;color:#fff;border:0;border-radius:6px;padding:7px 14px;cursor:pointer;font:inherit}</style>' +
+    items +
+    '<script>function copiar(b){var i=b.previousSibling;i.select();' +
+    'var ok=function(){b.textContent="Copiado";setTimeout(function(){b.textContent="Copiar"},1500)};' +
+    'var resp=function(){document.execCommand("copy");ok()};' +
+    'if(navigator.clipboard)navigator.clipboard.writeText(i.value).then(ok,resp);else resp()}</script>';
+  SpreadsheetApp.getUi().showModalDialog(HtmlService.createHtmlOutput(html).setWidth(600)
+    .setHeight(Math.min(70 + 46 * filas.length, 420)), 'Copiar nombre del PDF');
+}
+
+function prepararCorreo() {
+  const filas = filasSeleccionadas_();
+  if (!filas) return;
+  const ss = SpreadsheetApp.getActive(), ui = SpreadsheetApp.getUi();
   const lis = ss.getSheetByName(H.lis), sol = ss.getSheetByName(H.sol);
   const col = c => lis.getRange(c + '2:' + c + '30').getValues().map(r => r[0]).filter(String);
   const t = HtmlService.createTemplateFromFile('Correo');
@@ -341,7 +374,7 @@ function armarInstrucciones_(ins) {
     ['1. Menú Registro > Nuevo certificado: lleva a la primera fila libre de Certificados.', ''],
     ['2. Escriba el DNI: la fecha de recepción se completa sola con la fecha de hoy.', ''],
     ['3. Apellidos y nombres en una sola columna, con este formato: PÉREZ GÓMEZ, Juan.', ''],
-    ['4. Guarde el PDF escaneado con el nombre que aparece en la columna "Nombre del PDF".', ''],
+    ['4. Guarde el PDF escaneado con el nombre de la columna "Nombre del PDF". Para copiarlo: seleccione la fila y use Registro > Copiar nombre del PDF.', ''],
     ['', ''],
     ['Enviar certificados por correo', 's'],
     ['1. En Certificados, seleccione las filas a enviar (Ctrl + clic para elegir varias).', ''],

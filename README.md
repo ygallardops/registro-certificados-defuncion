@@ -48,6 +48,7 @@ flowchart LR
 - Crea el borrador en el Gmail de quien envía, con su firma configurada en Gmail.
 - Recuerda a los solicitantes: el que se registra una vez completa solo su área y su correo la próxima vez.
 - Cuenta en el Resumen los certificados recibidos por tipo y origen, los escaneados, los entregados y los correos enviados de cualquier mes.
+- Permite copiar el nombre del PDF con un botón aunque el archivo no deje copiar ni descargar a los editores.
 - Protege las hojas de configuración y avisa antes de editar a mano las hojas que llena el diálogo.
 
 ## Hojas
@@ -102,6 +103,7 @@ Todo se hace desde el menú <kbd>Registro</kbd> de la hoja:
 | Opción | Qué hace |
 | --- | --- |
 | Nuevo certificado | Lleva a la primera fila libre de Certificados |
+| Copiar nombre del PDF | Muestra el nombre del PDF de las filas seleccionadas con un botón para copiarlo |
 | Preparar correo de envío | Abre el diálogo con los certificados seleccionados |
 | Ver envíos | Lleva a la primera fila libre de Envíos |
 
